@@ -39,6 +39,23 @@
 })();
 </script>
 <script>window.APP_ROLE='writer';</script>
+<script>/* ns-isolation v1 ─ 같은 주소(저장소)의 reader/writer끼리만 저장 공간을 공유한다.
+   aquabluevictory.github.io 아래 앱들은 출처(origin)가 같아서 IndexedDB·localStorage·
+   BroadcastChannel을 전부 함께 쓴다. 주소의 첫 칸(저장소 이름)을 이름표로 붙여
+   글·첨부·초안·반응·실시간 채널을 앱마다 따로 둔다. 설정값(AI 프록시·키 등)은 계속 공유한다.
+   저장소를 쓰는 어떤 스크립트보다 먼저 실행돼야 한다. */
+(function () {
+  var ns = 'root';
+  try {
+    var p = String(location.pathname || '/');
+    var seg = p.split('/').filter(Boolean);
+    if (!/\/$/.test(p) && seg.length && /\.[A-Za-z0-9]+$/.test(seg[seg.length - 1])) seg.pop();
+    if (seg.length) ns = decodeURIComponent(seg[0]).toLowerCase();
+  } catch (e) {}
+  window.__APP_NS__ = ns;
+  window.__APP_NS_SFX__ = '@' + ns;
+})();
+</script>
 <script>
 /* Claude 미리보기 같은 샌드박스 환경에서는 브라우저 저장소 접근이 막혀 있을 수 있어요.
    사용 가능하면 그 저장소를 그대로 쓰고, 막혀 있으면 메모리 저장소로 자동 대체합니다.
@@ -93,14 +110,14 @@ var appStorage = (function(){
 (function (root) {
   'use strict';
 
-  var DB_NAME = 'news_store_v1';
+  var DB_NAME = 'news_store_v1' + ((typeof window !== 'undefined' && window.__APP_NS_SFX__) || '');
   var DB_VERSION = 2;                 // v2 — 첨부 Blob을 별도 스토어로 분리
   var STORE_ARTICLES = 'articles';
   var STORE_REACTIONS = 'reactions';
   var STORE_META = 'meta';
   var STORE_BLOBS = 'blobs';          // 첨부 원본(Blob) 전용 — 글 레코드와 분리
   var CHUNK_BYTES = 32 * 1024 * 1024; // Blob 직접 저장이 막힌 엔진용 폴백 청크
-  var BC_NAME = 'news_store_v1_sync';
+  var BC_NAME = 'news_store_v1_sync' + ((typeof window !== 'undefined' && window.__APP_NS_SFX__) || '');
 
   var hasWindow = typeof window !== 'undefined';
   var hasDocument = typeof document !== 'undefined';
@@ -2643,7 +2660,7 @@ body.viewer #mine-empty{display:none!important}
     life:{label:'청약·제도', g:'linear-gradient(135deg,#0D2A2E,#2A7E86)'},
     health:{label:'자금', g:'linear-gradient(135deg,#2B1A12,#96502A)'}
   };
-  const KEY='elifsuwon_my_articles_v1', DRAFT='elifsuwon_draft_v1';
+  const KEY='elifsuwon_my_articles_v1' + ((typeof window !== 'undefined' && window.__APP_NS_SFX__) || ''), DRAFT='elifsuwon_draft_v1' + ((typeof window !== 'undefined' && window.__APP_NS_SFX__) || '');
   /* 발행 템플릿이 이 앱과 같은 세대인지 확인하는 표식.
      구버전 파일로 발행하면 리더 쪽에 gamma 분기가 없어서 원본 docs 주소가
      그대로 iframe에 들어가고, 기사 자리에 브라우저 오류 화면이 박힌다. */
