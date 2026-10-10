@@ -1,1 +1,56 @@
 
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>분양 리서치 데스크</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F8FAFD;
+  font-family:'Noto Sans KR',system-ui,sans-serif;color:#5A7090;font-size:14px;text-align:center;line-height:1.7}</style>
+</head>
+<body>
+<div id="ld">리포트를 불러오는 중…</div>
+<script>
+/* 원본 앱(글쓰기 파일)을 가져와 '리더' 역할로 바꿔 띄운다.
+   원본 파일 이름이 다르면 SOURCES 첫 칸만 바꾸면 된다. */
+(function(){
+  var SOURCES=['./index.html','./write.html'];
+  var MARK='ng-build-v4-gamma-embed';           // 이 앱이 맞는지 확인하는 표식
+
+  function toReader(html){
+    // 1) 글쓰기 잠금 블록 제거
+    html=html.replace(/<script>\s*\/\*\s*═+\s*writer-lock[\s\S]*?<\/script>/,'');
+    // 2) 역할을 reader로
+    html=html.replace(/<script>\s*window\.APP_ROLE\s*=\s*'writer'\s*;?\s*<\/script>/,
+                      "<script>window.APP_ROLE='reader';<\/script>");
+    if(html.indexOf("APP_ROLE='reader'")<0){
+      html=html.replace(/<head[^>]*>/i,function(m){ return m+"<script>window.APP_ROLE='reader';<\/script>"; });
+    }
+    // 3) 애드온이 없으면 끝에 붙인다 (본문 안 문자열이 아니라 진짜 </body> 앞에)
+    if(html.indexOf('addons.js')<0){
+      var i=html.lastIndexOf('</body>');
+      var tag='<script src="./addons.js"><\/script>';
+      html=i>-1?html.slice(0,i)+tag+html.slice(i):html+tag;
+    }
+    return html;
+  }
+  function fail(){
+    document.getElementById('ld').innerHTML=
+      '리포트를 불러오지 못했어요.<br><small>reader.html은 앱 파일과 같은 폴더에서 http(s)로 열어야 합니다.</small>';
+  }
+  function tryNext(i){
+    if(i>=SOURCES.length){ fail(); return; }
+    fetch(SOURCES[i],{cache:'no-cache'})
+      .then(function(r){ if(!r.ok) throw 0; return r.text(); })
+      .then(function(t){
+        if(t.indexOf(MARK)<0) throw 0;
+        var out=toReader(t);
+        document.open(); document.write(out); document.close();
+      })
+      .catch(function(){ tryNext(i+1); });
+  }
+  tryNext(0);
+})();
+</script>
+</body>
+</html>
